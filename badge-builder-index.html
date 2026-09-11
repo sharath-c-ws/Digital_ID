@@ -1,0 +1,655 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="A quick, tap-through booth game that builds your Digital Identity badge piece by piece — Woodside Cyber Awareness Month 2026.">
+<title>Badge Builder</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;600;700&display=swap">
+<style>
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  :root{
+    --bg:#081428;
+    --bg-2:#050d1c;
+    --surface:#0f2444;
+    --surface-2:#173257;
+    --surface-3:#1f3f6c;
+    --line:#2a4972;
+    --line-soft:#1c3355;
+    --ink:#f3f6fb;
+    --ink-dim:#aebedb;
+    --ink-faint:#7186ab;
+    --accent:#e0203f;
+    --accent-soft:#3a1420;
+    --accent-line:#7a2436;
+    --good:#2ecc71;
+    --good-soft:#123625;
+    --good-line:#1f6e46;
+    --amber:#f5a623;
+    --amber-soft:#3a2a10;
+    --amber-line:#8a611f;
+    --radius:22px;
+    --radius-sm:12px;
+    --font-body:'Inter',system-ui,sans-serif;
+    --font-mono:'IBM Plex Mono',monospace;
+    --emoji-font:'Apple Color Emoji','Segoe UI Emoji','Noto Color Emoji',sans-serif;
+  }
+  html,body{margin:0;padding:0;}
+  body{
+    background:
+      radial-gradient(560px circle at 12% -8%, rgba(224,32,63,.28), transparent 60%),
+      radial-gradient(520px circle at 108% 6%, rgba(46,204,113,.20), transparent 55%),
+      radial-gradient(480px circle at 50% 115%, rgba(245,166,35,.16), transparent 55%),
+      var(--bg);
+    background-attachment:fixed;
+    color:var(--ink);
+    font-family:var(--font-body);
+    min-height:100vh;
+    display:flex;
+    justify-content:center;
+    padding:28px 16px 40px;
+  }
+  .app{width:100%;max-width:430px;}
+
+  .brand-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;}
+  .brand{display:flex;align-items:center;gap:9px;}
+  .brand-badge{
+    width:36px;height:36px;border-radius:10px;
+    overflow:hidden;flex-shrink:0;
+    display:flex;align-items:center;justify-content:center;
+    background:var(--accent);
+  }
+  .brand-badge img{width:100%;height:100%;object-fit:cover;display:block;}
+  .brand-name{font-weight:800;font-size:16.5px;}
+  .brand-sub{font-family:var(--font-mono);font-size:11px;color:var(--ink-faint);}
+
+  .card{
+    background:var(--surface);
+    border:1px solid var(--line-soft);
+    border-radius:var(--radius);
+    padding:26px 22px;
+  }
+
+  /* ---------- intro ---------- */
+  .eyebrow{
+    display:block;font-family:var(--font-mono);font-size:12px;font-weight:700;
+    letter-spacing:.06em;text-transform:uppercase;color:var(--good);margin-bottom:10px;
+  }
+  .intro-card h1{font-size:clamp(1.55rem,6.5vw,1.95rem);letter-spacing:-.01em;margin:0;line-height:1.2;}
+  .intro-list{margin:16px 0 0;padding-left:0;list-style:none;display:flex;flex-direction:column;gap:9px;}
+  .intro-list li{display:flex;align-items:flex-start;gap:9px;color:var(--ink-dim);font-size:15px;line-height:1.45;}
+  .intro-list li::before{content:"▸";color:var(--good);font-weight:700;flex-shrink:0;}
+
+  .preview-row{display:flex;align-items:center;justify-content:center;gap:16px;margin:22px 0 4px;}
+  .preview-ring{
+    width:64px;height:64px;border-radius:50%;
+    background:conic-gradient(var(--line) 0deg,var(--line) 360deg);
+    display:flex;align-items:center;justify-content:center;flex-shrink:0;
+  }
+  .preview-ring-inner{
+    width:50px;height:50px;border-radius:50%;background:var(--surface-2);
+    display:flex;align-items:center;justify-content:center;font-size:20px;
+    font-family:var(--emoji-font);
+  }
+  .preview-tray{display:flex;gap:5px;flex-wrap:wrap;max-width:150px;}
+  .preview-slot{
+    width:20px;height:20px;border-radius:50%;background:var(--surface-2);
+    border:1px solid var(--line-soft);
+  }
+
+  .name-row{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin:20px 0 0;}
+  .name-row label{font-size:13.5px;color:var(--ink-dim);}
+  .name-row input{
+    flex:1 1 180px;background:var(--surface-2);border:1px solid var(--line-soft);
+    border-radius:var(--radius-sm);padding:10px 12px;color:var(--ink);
+    font-family:var(--font-body);font-size:14px;
+  }
+  .name-row input::placeholder{color:var(--ink-faint);}
+  .name-row input.error{border-color:var(--accent);}
+  .name-error{width:100%;font-size:12.5px;color:var(--accent);margin:6px 0 0;display:none;}
+  .name-error.show{display:block;}
+
+  .btn{
+    width:100%;border:none;border-radius:999px;padding:15px 20px;
+    font-family:var(--font-body);font-weight:800;font-size:16px;cursor:pointer;
+    margin-top:16px;
+  }
+  .btn-primary{background:var(--good);color:#04180d;}
+  .btn-primary:active{transform:scale(.98);}
+  .btn-ghost{background:transparent;color:var(--ink-dim);border:1px solid var(--line-soft);}
+
+  .topics-line{
+    text-align:center;margin-top:16px;font-family:var(--font-mono);
+    font-size:12.5px;color:var(--ink-faint);line-height:1.6;
+  }
+
+  /* ---------- round phase ---------- */
+  .hud-row{display:flex;flex-direction:column;align-items:center;gap:12px;margin-bottom:6px;}
+  .step-label{font-family:var(--font-mono);font-size:12.5px;color:var(--ink-faint);letter-spacing:.04em;}
+  .ring-wrap{
+    width:96px;height:96px;border-radius:50%;
+    display:flex;align-items:center;justify-content:center;
+    transition:background .5s ease;
+  }
+  .ring-inner{
+    width:78px;height:78px;border-radius:50%;background:var(--surface);
+    display:flex;align-items:center;justify-content:center;font-size:30px;
+    font-family:var(--emoji-font);
+  }
+  .badge-tray{display:flex;justify-content:center;gap:8px;flex-wrap:wrap;margin-top:2px;max-width:340px;margin-left:auto;margin-right:auto;}
+  .badge-slot{
+    width:32px;height:32px;border-radius:50%;background:var(--surface-2);
+    border:1px solid var(--line-soft);display:flex;align-items:center;justify-content:center;
+    font-size:15px;opacity:.32;transform:scale(.82);transition:all .35s ease;
+    font-family:var(--emoji-font);
+  }
+  .badge-slot.filled{opacity:1;transform:scale(1);background:var(--good-soft);border-color:var(--good-line);}
+  .badge-slot.current{opacity:.7;border-color:var(--amber-line);}
+  .badge-slot.pop{animation:slotPop .5s cubic-bezier(.34,1.56,.64,1);}
+  @keyframes slotPop{
+    0%{transform:scale(.6);}
+    55%{transform:scale(1.35);}
+    100%{transform:scale(1);}
+  }
+
+  .round-card{margin-top:18px;overflow:hidden;}
+  .round-card.enter{animation:cardIn .38s cubic-bezier(.22,1,.36,1);}
+  @keyframes cardIn{
+    0%{opacity:0;transform:translateY(14px) scale(.97);}
+    100%{opacity:1;transform:translateY(0) scale(1);}
+  }
+  .round-icon{font-size:36px;margin-bottom:8px;font-family:var(--emoji-font);}
+  .round-title{font-size:19.5px;font-weight:800;margin-bottom:14px;}
+  .round-list{list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:10px;}
+  .round-list li{display:flex;gap:9px;align-items:flex-start;color:var(--ink-dim);font-size:15px;line-height:1.45;opacity:0;animation:bulletIn .35s ease forwards;}
+  .round-list li::before{content:"▸";color:var(--good);font-weight:700;flex-shrink:0;}
+  @keyframes bulletIn{
+    from{opacity:0;transform:translateX(-6px);}
+    to{opacity:1;transform:translateX(0);}
+  }
+
+  /* ---------- tap-to-reveal face ---------- */
+  .round-face{display:flex;flex-direction:column;align-items:center;text-align:center;gap:6px;padding:8px 0 2px;}
+  .round-face .face-icon{font-size:56px;font-family:var(--emoji-font);animation:iconPulse 1.7s ease-in-out infinite;}
+  @keyframes iconPulse{
+    0%,100%{transform:scale(1);}
+    50%{transform:scale(1.1);}
+  }
+  .round-face .face-title{font-size:19.5px;font-weight:800;margin:6px 0 2px;}
+  .round-face .face-hint{font-family:var(--font-mono);font-size:12px;color:var(--ink-faint);margin-bottom:6px;}
+  .reveal-btn{
+    width:100%;border:none;border-radius:999px;padding:14px 20px;
+    font-family:var(--font-body);font-weight:800;font-size:15.5px;cursor:pointer;
+    margin-top:14px;color:#fff;
+  }
+  .reveal-btn:active{transform:scale(.98);}
+
+  /* ---------- capture mini-game ---------- */
+  .capture-stage{display:flex;flex-direction:column;align-items:center;gap:16px;padding:6px 0 2px;}
+  .capture-ring{
+    width:150px;height:150px;border-radius:50%;
+    border:7px solid var(--accent);
+    display:flex;align-items:center;justify-content:center;font-size:54px;
+    font-family:var(--emoji-font);
+    transition:border-color .25s ease, box-shadow .25s ease;
+  }
+  .capture-ring.amber{border-color:var(--amber);}
+  .capture-ring.green{border-color:var(--good);box-shadow:0 0 0 6px var(--good-soft);}
+  .capture-ring.shake{animation:shakeit .35s ease;}
+  @keyframes shakeit{
+    0%,100%{transform:translateX(0);}
+    25%{transform:translateX(-6px);}
+    75%{transform:translateX(6px);}
+  }
+  .capture-caption{font-family:var(--font-mono);font-size:13.5px;color:var(--ink-dim);text-align:center;min-height:18px;}
+  .shutter-btn{
+    width:64px;height:64px;border-radius:50%;background:var(--ink);color:var(--bg-2);
+    font-size:24px;border:none;display:flex;align-items:center;justify-content:center;
+    box-shadow:0 6px 18px rgba(0,0,0,.35);cursor:pointer;font-family:var(--emoji-font);
+  }
+  .shutter-btn:active{transform:scale(.95);}
+
+  .got-it-btn{
+    width:100%;border:none;border-radius:999px;padding:14px 20px;
+    font-family:var(--font-body);font-weight:800;font-size:15.5px;cursor:pointer;
+    margin-top:18px;background:var(--good);color:#04180d;
+  }
+  .got-it-btn:active{transform:scale(.98);}
+
+  /* ---------- final ---------- */
+  .final-ring-wrap{
+    width:130px;height:130px;border-radius:50%;margin:4px auto 0;
+    background:conic-gradient(var(--good) 360deg);
+    display:flex;align-items:center;justify-content:center;
+    box-shadow:0 0 0 8px var(--good-soft);
+  }
+  .final-ring-inner{
+    width:104px;height:104px;border-radius:50%;background:var(--surface);
+    display:flex;align-items:center;justify-content:center;
+  }
+  .final-h1{text-align:center;font-size:23px;font-weight:800;margin:18px 0 4px;}
+  .final-sub{text-align:center;color:var(--ink-dim);font-size:15px;margin:0 0 14px;}
+  .tagline-chip{
+    display:block;text-align:center;font-family:var(--font-mono);font-size:12.5px;
+    color:var(--good);background:var(--good-soft);border:1px solid var(--good-line);
+    border-radius:999px;padding:8px 14px;margin:0 auto 18px;width:fit-content;
+  }
+  .final-tray{display:flex;justify-content:center;gap:8px;flex-wrap:wrap;margin-bottom:20px;}
+  .cta-box{
+    background:var(--surface-2);border:1px solid var(--line-soft);border-radius:var(--radius-sm);
+    padding:14px 16px;font-size:13.5px;color:var(--ink-dim);line-height:1.5;margin-bottom:6px;
+  }
+  .cta-box b{color:var(--ink);}
+  .footer-note{
+    text-align:center;font-family:var(--font-mono);font-size:11.5px;
+    color:var(--ink-faint);margin-top:20px;
+  }
+
+  .phase{display:none;}
+  .phase.show{display:block;}
+
+  /* ---------- juice: toast / flash / confetti ---------- */
+  .piece-toast{
+    position:fixed;top:14px;left:50%;transform:translateX(-50%) translateY(-24px);
+    background:var(--good);color:#04180d;font-weight:800;font-size:13.5px;
+    padding:9px 18px;border-radius:999px;opacity:0;pointer-events:none;
+    transition:opacity .3s ease, transform .3s ease;z-index:80;
+    box-shadow:0 8px 20px rgba(0,0,0,.35);white-space:nowrap;
+  }
+  .piece-toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+
+  .flash-overlay{
+    position:fixed;inset:0;background:#fff;opacity:0;pointer-events:none;z-index:90;
+  }
+  .flash-overlay.hit{animation:flashpop .45s ease;}
+  @keyframes flashpop{
+    0%{opacity:.9;}
+    100%{opacity:0;}
+  }
+
+  .confetti-piece{
+    position:fixed;top:-12px;width:8px;height:14px;border-radius:2px;
+    pointer-events:none;z-index:70;animation:confettiFall linear forwards;
+  }
+  @keyframes confettiFall{
+    to{transform:translateY(115vh) rotate(600deg);opacity:.15;}
+  }
+
+  .ring-wrap.pulse{animation:ringPulse .5s ease;}
+  @keyframes ringPulse{
+    0%{transform:scale(1);}
+    40%{transform:scale(1.12);}
+    100%{transform:scale(1);}
+  }
+
+  @media (max-width:400px){
+    .card{padding:22px 18px;}
+    .capture-ring{width:130px;height:130px;font-size:46px;}
+  }
+</style>
+</head>
+<body>
+<div class="piece-toast" id="pieceToast">+1 badge piece!</div>
+<div class="flash-overlay" id="flashOverlay"></div>
+
+<div class="app">
+  <div class="brand-row">
+    <div class="brand">
+      <div class="brand-badge"><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAIAAAACACAYAAADDPmHLAAAcJElEQVR4nO2deZgcVbnGf+dU9TYzPVtmQvbJipqwgwQQgQvKZedq5ILsIEjAiApcVlm9gEpARIlCQBACl0UQEDDskXuNLEKQRZA1+zpLT8/0XnXO/eNU9SRhkszS3bO+zzPPM1PTXXWqzlvf+fYj3h+5l2YYQxayrwcwjL7FMAGGOIYJMMQxTIAhjmECDHEME2CIY5gAQxzDBBjiGCbAEMcwAYY4hgkwxDFMgCGOYQIMcQwTYIhjmABDHMMEGOIYJsAQxzABhjjsvh5Av4IQCCnRWnt/CjQalIJBmjg3TAAPwrJQqTRuKo0IBgCBzmYRloWsKANLgqv6epgFxzABAKTEjcUJTmug6vgjiew2A6Qk+9FSEi+9SmLRK6jWdmRVBSgNevCIAzGks4KFAAGqtZ2a02Yx8ppzsUbUfO5jqTfeo/Fnt9P21EvI8jKwLLMsDAIMbQJIiWpto/7H51B/6WwAtOMihDC/o83v0ujKzbc9wPof34x2XUQ4OCiWhKFrBdgWbksrI75/EvWXzka7LiiNsC2z3lsSYVlm8pUCpag96zjGP3QzsrICncoYSTDAMSQJICwLFWsjesh+jLzuPFAKISVI0fkXpAQp0Y5D+b/txYSHb8GqiqLTGUOWAYyBPfqeQAhUJos9qo7Rt1xu3nLv+Da/attoxyHy5R0Zd/+NiIANOadL3+2vGHIEEFKikym2u+YHBCaMNqJfdv0x+CQo22c3xsy7CpVMDxNgoEBYFm5rGxUHf4Wq4480ylwP1nGfBJWz/p26i87EbYoZ3WEAYkgRQCuFCAUZedW5xutHz99cYVloV1F/2dlUfH0f3FjbgFQKhwwBhG3hxuJUHXc44V2no13VOwVOCONGsCxG33I5Vm0V5HIDbjkYGgQQoHMOVm0VdeedBloXZp6kRLsuwSkTGHnFHNz2hLEmBhAG1mh7CCEt3Hg7VbMOITi1wQR7CjRRQpoYQfVps6g4YC/cePuAMg0Hzkh7Ae26WJUV1M4+zrz9hTy5504WtsXIq89FhIImXtAfII0zK+/Q6uwjJR5S6WFZqHiCikP2IzRjmgnkFFpMS4l2FZE9d6L620egWtt6ZF0UZiwib5HoZAo3FsdtaUW1JfL/3xiDPxqoNQQsak6b1fF3ESCEOfeIC04n/sQL6FTaWAWlihxKiRAClUzhpjJY1VHCO36BwOTxyPIIueWrSb36NjqnPCll4hiDmwBSohNJInvsQNlX9/De/iK9mb5COHEc1Sf/B41z78SurTaOpmJCCIQlUe0p3GyW8A7TqPzWIVQefgDBL07ZxD+RWPQqq8+6Amd9kwlmKT24CSCEwM3mqPrPwxC21WPHT3euh9bUzv42rQueQCWSRZUCwrJQ2SxuS5LIrl+i9nsnUjnrYGRZpONDG2UzlR8wk3EL5rLsyLNMJFPKQawDCIHKZgmM3Y7Ko7/mHSry7UqJVprAuFFUHXsYbluRzEJpQtROSytWVZRRP7+QSS/dS/VJRyPLIl5kU3XoO150U+dMHKP2u8fixtsR1iAmgJASnUhRcdA+2KPr0UptOdpXyOsKQEP1d47BqqlCO05hz29b6EwW1Zag+sSjmPTSvYz4wcmISNhMvNYdWv9mzg5hSVCaquOPNNFMxx28BNDaxPYrZx1sRGAJlTG0IrT9RKKHfBXVlizMsiMEWBZOcyuB0SMZd+8NjJ1/LYEJYzad+K15uIQAKQhObSA4eTwqnRmkBBACnc4QnDaRsn13N3Z6KT10HteqT/kGBK18lnGPYUlwXVRLK9XHHc7EF++h8htf9xJVujDxPoQwuQ+2RWDcKMg5g5MAQkpUKk351/ZBlpcZv38pffSWBK0p23d3IrtMRydTPfY9CNtCt6cQAZvRv7qCsXf9FHu7uo4wdg+XNRktB6UHJwG00shQkOih+wMg+iCpX7sKYdtUfuNgVDqD6O5E+SK/qZXQjKlMeHI+NWcck1fuer2seFJp8BFACHQmQ3BaA5GZO5ljfRCg8Sc8evRB2HU16JxDl33Q3ndVc4zq44+gYeGdRHabDo7bqXLXE7jxdpBi8BFASIlOpSnf78sdJlFfhGi9ZNLgpHFEZu6CSnRxGbAsdNZBp9Jsd+15jP3d9VhVUWO3FyLpxAteOeuawLYGHwGM69em4uv79vVI0F5QKHrEAWjHyaebbwlmvU8iy8KMu+9GRpx/eoc9X4gIoyf2naYWnDXrEcHAICNA3vkzisjMnc2hPozP+8tAxUH7YNfXbnUZEAEbtzlOcOoEGp6+g+gR/4YuoMgH8lHK7IdLvTQ2e3ARwIj/DJE9djAZOqrE2v/mkMYaCDSMIbzLl0wCaSeEFLaFs6GZ8gNn0rDwTsI7bm/c1gXOM/TN0dTrb6NSmUHoCRQm7698/z2BDhHcl9Be9VD5fnuis7lNlwGv6shpbKHmlG8y4dFbsUeOAFcVJWYhvGUk8b9vIALGPzGogkHacbGqKijbZzeA7pteRYA/4WVf2Q0ZCXWQUprAkYq1UX/xWYy8+lxzXPUyV3FLUBqkILdqHekl7yEi4UHmB5DSeP+mNBDcfqI51h8SND0ShnaYhj12O3QmayKErkIn04y64SIz+RsHb4oArY0kSrzwN5y1jchAAPQgIoAQApXJEdl9hqnYKbX3b8sDA62xqqKEpk81iqDjgKsYc9tPqJ1zIvimahHH6yvD8cefNy8Lg9QR5It/3Y9aemgv+yay2wxUMokIBRl37w1UffsIo+l31ZffU3jKcOaDT0kufhNZHslXNg8aAmjXxaquMM0dYJs2d8mhNcGpE7BqKxn/P7+g4rD9TSl6CSqK/FhU64NP4bbEEXaH6jc4CCAFOp0l2DCWwOTx5lixkz+6AeGJ97K9d2PiE/Mp23f3kk0+WpvgWKyN+B+eMd5R3dHXoP88pV5ACInKZgntsD0iYHvRv74elQdlFDvVliD+6LNE9t4lH5ItBbQyz6L1kWfIfLQUGQ5tkrY+KAiAAJQisscO5u/+0sNH63xV0soTz6fpV/caK8BzEJXi+kJKdCZDy50PI0PBz+UmDAoCaKWQ4RDhnb8I9JP1X2vzsDWs/u7ltP1pESJo47a2lW4InvIXf+x50m+9b/obbdbbqPgE8Cpninl+nXOw6msJTZtojvW1A0iT7zqy9uIbiC14HGt0HSoWR8U8AhRbAuTf/izNv15glsZOrlkcAgjR4cr0eu/4ZUoFd3QIgc7mCDaMxaqr8cRuHxPANaZd08130/TLe7BH1oKrUJksbqzVfKbYK4D39rc+9DSpv7/b6dsPxSCAFGjHxW1pNSwMh0x5VnsSpzlmcuV9ghRgooRPgC9Myue89SlcF2yL+CPPsO7ym7FqKvMpaTqbw21PAkX2U+gOxbPpF3cjQqEt5iUWNhYgBTqTxaqKUnvpbCoOmImsjqLTWVOa9PrbJBa9SuqtD3ATSWRFOTIUMA+opyLRK8kKf2kKkNe7+gZKgWWRev0dVn/vakN+f1BSgNImMaTI0MoEk5pve4D0ex+ZjCSn8wqlwhHAW4tlRTnjH76FyB47bvLv0PQpVBzyVeovO5vU6+/Q+uDTxB97jtyq9cioTwS326JRK40IBAhuP8kbR4Hup7tQptLGWbuBVd+5BJ3OIMrCn+slqNOZoo9DSEluxRqafnUvVrQiH5HsDIVbAqRAJ9OMvOpcInvsiM7m8mnLKIV2VT6TNTJzZ0bddAmTFi2g/uLvYkXLcZpioOl+GNR1kdEygpPGAn1kAXjavnYcVs++guzHy82au9GDF5iYQLEJoD0daMM1t+Ksa0SEAluVroUhgDf5oRlTqT7+CMPCgN2Rtiwlwm+8CIYYriIwYQwjrz6XSX9ZwIg5J4LWuK1xT1nsWp67dlzsuhrsUSPzx0oN7YVwN/xkHm1/fnnrFUHFHJ+XR5B48RViDzzpjWPrxakFIYAQEpXOUL7/TLPuabZ+o369mtZo1yUwYQyj5l7MxGd+R8XBX8WNtaIzuW17y7xlxx5Vj6wszx8rKbyH3vbkSzTe6FUEdzL5GvNmyki4OOPwlB+VTLP2krldToUr2BIghCA0faoRhV1dyH1rwCNCeNfpTPjjrYyZfy32dnW4Ta35Lp1buiaOQ2D8aHOg1BbARkkWa390HSIY3Oad5xXDAkN7OkjT3DuM06eic7NvcxSEAFprsCzs7Ub0TAnzieDpDNUnHMWkRfdSfdo3Ue0JdCazRWmglc4ToNclWN2E1sa8W3ve9eRWrkVGQlt+6Brw9x4ACqqtelp/6rW3afzl77GqK7cp+n0U1A/Q6zw2T2fQrou9XR1jfnM14++7EXv0SJym1s/Hzb1fA2O99b+E8+/3Gojd/Sjxx57Hqt3GeqsUMhRAVkaBAq5UHulVIsmaH12HznWv82mBWmUBSuHG4oU5nd9UwVVEjzqISS/83vTeicWNJeERTXvdve3t6jvGUQr4ptayVay74pdY0fKtmlr5osxIGHtEtX+wYGNBStZfcyvpN97FinZN9PsojBKIQCtFbs0Gc6AQb6IQpqmB62KPqmfsXdczet6VyHAIFW83SQ1aIwI21sja/DhKAk/JXXf5zbgbmrdpaoGXsFJTadLVoTDz770MbU++RPO8+5Bd0Po3R0GVwOyHn+V/L9h5LSvvS6g5dRYTF95J2cydcZtaTNl3JIxVXel9uGCX3SL8DqPtC18m/uhzyJourLdCoHNmWZMVZdu2kroCZfSu3PI1rPnRdd4+R91/8wqmBIpAgMw/P/ZYKQu7Hnu+BByX0IxpNDx5O7XnnoyKtRkJUFlhPldsE1CbHUR0Osv6/55n8uy7cJ++tRL0s5V6a61os2+RdlzWnHsNzur1yNCmiR5dRWEkgFKIcJDMR0vJfrKiY5CFhm15a2mIUT+/kLF3XItdX+vluBffBPTbzMTuf2KrEbZOv6s1oXy8opfPxpNCG677jXE8VVf2uBtZwWIBwrZxmltJ/N8bBLefiNYKQRHSnvxsGq2pOuEownvssImEKEgFbWfwc+sSSZrn3Y8MhzbJrdv6VzUyGCC8U+8TVvySsbYnXqDx53d41kfP+xAVTAfQaIQlaF/4MlDkokw/h14p7LpaVp1yEZn3PwGvFVwx4GfXtD68kPS7H5pWbF0RuUKAn7AyY6o51tOEFc/rmPnXp6z+3tXIcLBn59kIhZslpZBlZSQXv0n2s5Wlic1LiXZckq+8xdKvn0rbn17scCgVcgnSXuFpziF296OIYKDrYlwIVDpNaPpUU/fX04QVL6Ss4u2sOuUisz9BsPd9iQtHAA0iaONsaCb+x2fNoWJ65rxT60wGWV6GSqRYccL5NP7s9o6S6kIR0Hv7k399g/SSf3Zr7RfSxCvKv7qHGW9Ptprz8wuBVbOvIPXW+0bxLYC0K6ic1kojI2HiDz5t4uGywNZAZ9d0FTrnmGYH5WWsu+IWVp1+Cao96XXD6P1D0t4LG394IWrzCt8ujE+WRSg/cG+gZ+u/do3jad1lNxF/5BnsEZ0HnHqCwi7Uytxs+p0Pafvzy8b+VcXqlWuYpdMZtOt4Il9j11UTu/9PLD96Nrmlq7xCzF6MwVP+3NY2Ei+/joyE86Ve24TXrib0pSn5jOXuVv5qx0HYFs3z7qfpF3dhjajutrNnq0Ms2Jk8aEw7k5bbHvDs5mIpg+ZNEqFgh+tYmxJxe0QNyVf+wdLDzyT16tum705PH5q3xqbfeJfc8tVd8vrlRygFKp0hevgBXsFK98ZgJt+m9Q8LWXfxXGRVZcH3Iij87LgKK1pO4v/+Tvvzi/PBnWJB2J/PNNaOg1UdxVm1jmX/cbZRDu2eSQI/tJ185S1UOtstQpt+BVEqZ/27GWt3lg7HRdg27c8vZs3ZV5oW717+YyFRTFuNppvuMo6bYnjovFP6EmBzhVM7rsnJy+VYedJ/Ebv70R5JAn/C0+98aJo4dVGpMS3ck5Tv92VCX5ycD9p0BX7dYPKvb7Lq5AtNUwnbKspOJEUhgHYVVmU5ib+8RttTi/K99IsBGQ6ZLJvOHo6rIBBAhIKsPucqmn9zv5nErpLAM710ziG3fI2RIt16AzXVp87yTtW17/lrfuq1t1lx/Hmml89GGzwUGkWTAFqbzlcbfno7OpPN99IvNEQkbNLB1BYKQj0TTlaWs/aCn9Fy96PdIwGg2pMm1G1bXbNqpMRNpAjvOoOKg79CVzt7+mI/uXgJy48510Q9I6GCWDJbHGrRzqwUsqKM1Bvv0nLXI14v/QKy2COUCAY2Sn7cwlKjNSCQFWWs+d7VtPy+myRwHFPU2cVwoxACMjlqZx9nnEZduG9f7Lc/v5jls+aUZPKhyLWB2lXI8jIa5/4OZ80G4xco5DrmncseMxJcd+u6hifOZUUZa+ZcQ/zhhV0ngWV5TRW6MHYpcRNJwrtNp+pbh+TNyK2OyzXl4q0PPs2K435ouolFQp+rKSgGilscqk3TZmflWjZc+xvjF+hiAKVrpzcTEpw8vmvSxUvilJEwq876Me3P/G9+K5mtQVaUYdVWer18tn4J4fn+6847DREO5WMIncLvY2RJGm/8HavOuBQhpIntl2DyoQTVwdp1kdVRYvc+RuKlV81aWKib855r6IuTu56P6CVSICWrTruE1Gtve2PqhAR+KlcwQHBKAzq79a3ihSVx4+2UHzCTqNfPf4vjckzehGpPsvrsK1l32U3GxWzJkmY3l6Y/gPfQ1l0y17hoC2TP+iI/NH0qsrKi65aGN6kqlWblSReQ/WS5IUUnD96XMuUH7m1q7rZCAK2MTlJ/5ZwtT7wfqLIt0v/4gGWHn0nLXY9g11b7F+zaPRQIpSGArxAueZ/G639bOIXQm4zg5PEEJ41Dp7Ndz4h1FaIsTG71elaefKGpZu7EUvHX78qjDiQ4eQIqldlCu1cbNxan5rRZlM3cOb8rVx5KGSnjHWuedz/LDjuD1JJ/Gt++t+1LqVGyDiHaMUmRTfPuI/Hy64VZCoTxMopggMheu6Ay3dyYwTFbyqbeeJfVZ18FShuny8YTIYTxbo6oZuSVc4wE27zHj5SoZIrQtInUXzq7I+TrKXh5Mni5+8uOms3a869HZ3PIirKC+va7i9K2iBECNKz94XXGri6gbyB66H5GoeumleHHDuJ/fJb1P7nV5PltTkxvXa469jBG33SJqfOPtZmCFs860Nkso2640ARrck6+SNPfsi3zwaes+f5PWHb4d0m89AqypirfMbQvId4fuVdJ5Y6wLZymGDWnfpMxv72m95s5eg9aJdN8tu9xZD9bmd8Vs1uQEhVvY9w9c6mcdXDn4/LcuclX3qLxZ/NJvPwaqj0FjsOoGy5kxHmnb/rxdIbU4iXEHniStqcW4Ta3mjh+ZyTrI5ScAIDpGNIcY8z8a6k+6ehek8B3ojTecAfrLrvJ9ObvrliVEnIOIhxi0ov3mH7DnfnvNzqWfvM92p9bTG7NemrOOAZhWbjNrWQ/XUHq7++QXPwmmX99ZnbnipYj7O5HBIuNviGAn60jBBOfvcvEyt1edMn2lhG3Kcan+/wnTlOrKU/v7vJiW6jWNsr22pWGp+aDbRmdYnPNXyljEdg2Ouew/KjZJF/9ByIURCdTqEwWMHEKEQmbVPJCp6kVCH3TJs4zg3Qqw6ozLjUauNdCpUfwHrBVV8OIC85AtSV6JlEcF6uqksTLr7Hhp7chrM6tFVOSZuOs3cBn+59A+4t/M3kCrolA2rXV2LXVxpunVJ9p+F1B3/UJdBUyWk763Y9Yfc5V5pjWPX5QQho7vvY73yJ66H44zbFNeuJ2FdpxsGqrafrFXSQXLzGhZp8EXjGGsC2yHy9j+TfOIf2PD7DravNeRpQpddd+d7R+jj5tFKkdB7u2mvijz7L+6l95tYA9VI4E+Hvtjf71lYSmTDAbJPeABEiBVpq1F/wUlUwZv5Xjelq/Rftzf2XZYWeSfvdjrOpoR35e/5/vz6HPO4X6b1zjDXcQW/B4t0O1m8DTLQLjRzH+oV8SGD8Kt8XTB7qTlOJlNaWX/JPmXy8wLW5sC53OsOGaW1lx7A9xGluQ0fI+teELgb5RAj83CpFvDjH+kV9Tvv+Xe2cZeFWz2U9XsHr2FSQWvYasLDe9cn1HT2dLjSdFhJCm2Wd7AjRM/tuDuM2trL/sJpKvv4tVXQGitD77YqF/EACMeziTxaqpZOLT8wl+YXLvLAPPXNPZHE233EPzb/+H3Io1Jn08EjYh3o2kgtYaXBedyRmPom0T+sIkak7/FsGpDaw49gemJ3G03ARyBgn6DwHA5Oy1JwhOm0jDU/OxR9V1K5fuc/AVM8BZs4HWh/5M29OLyLz3EW4snhffAgG2hVVZQaBhDJE9d6LikP2oOGBPU3iqNcsOO5PE4je9krCB/+b76F8EwHgK3Vicsr13Y8Jj8zqaHfWUBFp7IeCO7+eWriLz4Wc46xpN0UXAJjCqnsDEsQQaxm7i59fZLCIYJP7Yc6w84XysqmjPFdV+iH5HAPAqjZtaqDzyQMbdf1PHhPQmu1jrfAvVbX7UNellHYElgUql+Wy/48l+vMyz7/vdY+sR+twK6AzacUyA5okXWH3W5R0T3xtnysYdzH1b3fF+XNe81RttzS4sma9C1spFloWJHnWg2Qq+H21H01v02zvRjoNdV0NswROsmXNNPpJYEI+aNGQQtvfjT/gW9un1lcXooftjlZcVsdyt9Oi3BAAvVFtfS/PtDxoSSI8EpRa/HgHCO21PcFqDl3jSD3YlKQD6NQHAkwT1NZuSoAglUluFnxsYMtvSmDqHfv/ouoQBcRdGEtTQPP8hVs++Ir8BQynNMT83MLTj9iXvSFpMDAgCgJdSVldNy12PsOrUizq2Yi+xSRacNN6EgQcJCQYMAQATrq2rIf6Hhaw45vu4G5rzzSSLDb8JpVUV7VmuQT/FwCIAGBKMqCbx0qssPexMMu9/YkK2pXLP9vWGVAXGwCMAHRnGmX99yrJDz8hX+OR3KCnytQfL2w8DlADgkaCiHLetnRXH/pDGuXdu0m284NczGyHgrF5nrIBitsErIQb0XZiagCAiHGLdZTex4ts/wlm9fpO9BwoHY36m3nxv0CiAMMAJAORNQauuhvhjz/PZQacQ/+Nzm0qD3k6Y1yNYJVK0v/C37jWK6ucY+AQAM8GOi11bhbOukZUn/xerzriM3NJV+Q0qe0ME7TimR/CCx8l+8InJJxgkUqBfRgN7BW9tVrE49piR1J5zArVnHIOsMjt1aNc1Jl1n6d6bQ6n8phSpv7/D8m/OQafSpqJnmAD9G8KyUNksqj1FaPoUak+fReWxh2PX13Z8yFVeCVeHne83gRJC5v39bU//hTVzrsaNxRGhrewLNAAxaAkAmBCwlKhUGpXOEJw4lujhB1B59NcI7z7DZPdsBZn3P6F53v3E7nsc/MYNg2jyYbATwIc0iZ4qk0ElUshwiOCUCYR3nU54x+0JTBiDVVuFEAKnsYXspytILl5C8pUluC1xrKqoCUANkiSQjTE0CODDkwhaKXQma9rM+qXeG213rx1zTJZH+mU9XyFR2N3D+zu8DSoBRDhotHnhRfr810CYBBDt5RIO5smHoUaAjaE0ms4nd+iIxMHiBxhGjzFMgCGO/wflsuZAQbGBEQAAAABJRU5ErkJggg==" alt="Woodside logo"></div>
+      <div>
+        <div class="brand-name">Badge Builder</div>
+        <div class="brand-sub">Digital Identity · Cyber Awareness Month 2026</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= INTRO ================= -->
+  <div class="phase show" id="phase-intro">
+    <div class="card intro-card">
+      <span class="eyebrow">Stronger identity. Stronger protection.</span>
+      <h1>Build your Digital Identity badge.</h1>
+      <ul class="intro-list">
+        <li>7 quick rounds on how Woodside's Digital Identity actually works</li>
+        <li>Learn one thing, then tap to snap a badge piece into place</li>
+        <li>Includes a mini photo-capture challenge — time it right!</li>
+        <li>Finish with your own completed Verified ID badge</li>
+      </ul>
+
+      <div class="preview-row">
+        <div class="preview-ring"><div class="preview-ring-inner">🪪</div></div>
+        <div class="preview-tray">
+          <div class="preview-slot"></div><div class="preview-slot"></div><div class="preview-slot"></div>
+          <div class="preview-slot"></div><div class="preview-slot"></div><div class="preview-slot"></div>
+          <div class="preview-slot"></div>
+        </div>
+      </div>
+
+      <div class="name-row">
+        <label for="playerName">Your first name</label>
+        <input id="playerName" type="text" maxlength="24" placeholder="e.g. Ram" autocomplete="off">
+      </div>
+      <p class="name-error" id="nameError">Enter your first name to start.</p>
+
+      <button class="btn btn-primary" id="startBtn">Build my badge</button>
+    </div>
+    <p class="topics-line">Privacy &amp; consent · Photo capture · Verification · Recovery · Protecting Woodside</p>
+  </div>
+
+  <!-- ================= ROUND ================= -->
+  <div class="phase" id="phase-round">
+    <div class="hud-row">
+      <span class="step-label" id="stepLabel">STEP 1 OF 7</span>
+      <div class="ring-wrap" id="ringWrap"><div class="ring-inner" id="ringInner">🪪</div></div>
+      <div class="badge-tray" id="badgeTray"></div>
+    </div>
+
+    <div class="card round-card" id="roundCard"></div>
+  </div>
+
+  <!-- ================= FINAL ================= -->
+  <div class="phase" id="phase-final">
+    <div class="card">
+      <div class="final-ring-wrap"><div class="final-ring-inner">🪪</div></div>
+      <div class="final-h1" id="finalHeadline">You're verified! 🎉</div>
+      <p class="final-sub" id="finalSub"></p>
+      <span class="tagline-chip">Stronger Identity. Stronger Protection.</span>
+      <div class="final-tray" id="finalTray"></div>
+      <div class="cta-box">
+        <b>Ready for the real thing?</b> Open the Digital Identity app in Microsoft Edge and select <b>Submit Identity Photo</b> — it takes a couple of minutes.
+      </div>
+      <button class="btn btn-ghost" id="replayBtn">Play again</button>
+      <p class="footer-note">Badge Builder · Digital Identity · Cyber Awareness Month 2026</p>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  function $(id){ return document.getElementById(id); }
+
+  var CARDS = [
+    {
+      icon:"🛡️", tray:"🛡️", title:"Why it matters", hint:"Tap the shield to find out",
+      type:"fact", accent:"#ff5470", soft:"#3a1420",
+      bullets:[
+        "Cyber threats increasingly target identity through social engineering and impersonation",
+        "Digital Identity moves us from verbal trust to digital proof",
+        "It's how Woodside confirms it's really you"
+      ]
+    },
+    {
+      icon:"📸", tray:"📸", title:"Capture the moment",
+      type:"capture", accent:"#f5a623", soft:"#3a2a10"
+    },
+    {
+      icon:"🔒", tray:"🔒", title:"Your privacy, your control", hint:"Tap the lock to find out",
+      type:"fact", accent:"#22d3ee", soft:"#0e3a42",
+      bullets:[
+        "You give consent before anything is captured",
+        "You choose which photo shows up across Microsoft 365",
+        "You can opt out any time — your photo and Verified ID get deleted"
+      ]
+    },
+    {
+      icon:"🙋", tray:"🙋", title:"Who actually reviews it?", hint:"Tap to find out",
+      type:"fact", accent:"#a78bfa", soft:"#2c2350",
+      bullets:[
+        "Most photos are matched and verified automatically",
+        "If not, it goes to your line manager (or someone they trust to recognise you)",
+        "Never a random stranger, and never the person in the photo themselves"
+      ]
+    },
+    {
+      icon:"⚡", tray:"⚡", title:"What you get", hint:"Tap the bolt to find out",
+      type:"fact", accent:"#fbbf24", soft:"#3a2e0c",
+      bullets:[
+        "A Verified ID inside Microsoft Authenticator",
+        "Faster, easier recognition across Microsoft 365",
+        "More confidence when working with others"
+      ]
+    },
+    {
+      icon:"🔑", tray:"🔑", title:"Lost your phone?", hint:"Tap the key to find out",
+      type:"fact", accent:"#60a5fa", soft:"#122a4a",
+      bullets:[
+        "Self-Service TAP gives you temporary access — no waiting around",
+        "No more relying on voice or security questions to prove it's you",
+        "Faster, safer recovery exactly when you need it"
+      ]
+    },
+    {
+      icon:"🏢", tray:"🏢", title:"It protects all of us", hint:"Tap to find out",
+      type:"fact", accent:"#34d399", soft:"#0f3a2b",
+      bullets:[
+        "Makes it harder for cybercriminals to impersonate someone at Woodside",
+        "Reduces the risk of fraud and account takeovers",
+        "One photo, stronger protection for the whole business"
+      ]
+    }
+  ];
+  var TOTAL = CARDS.length;
+
+  var state = { name:"", idx:0 };
+  var TOASTS = ["+1 badge piece!", "Nice one!", "Locked in!", "Snapped in!", "Keep going!", "Almost there!", "One more!"];
+
+  var captureTimer = null;
+  var captureState = "red";
+  var CAPTURE_SEQ = [
+    { key:"red",   dur:750, caption:"Move closer or further away" },
+    { key:"amber", dur:600, caption:"Center your face in the guide" },
+    { key:"green", dur:900, caption:"Perfect — hold still and tap!" }
+  ];
+  var captureSeqIdx = 0;
+
+  function showPhase(p){
+    ["intro","round","final"].forEach(function(name){
+      $("phase-" + name).classList.toggle("show", name === p);
+    });
+    if (p !== "round") clearCaptureTimer();
+  }
+
+  function clearCaptureTimer(){
+    if (captureTimer) { clearTimeout(captureTimer); captureTimer = null; }
+  }
+
+  function updateRing(){
+    var pct = Math.round((state.idx / TOTAL) * 100);
+    $("ringWrap").style.background = "conic-gradient(var(--good) calc(" + pct + " * 3.6deg), var(--line) 0)";
+    $("stepLabel").textContent = "STEP " + (state.idx + 1) + " OF " + TOTAL;
+  }
+
+  function renderTray(){
+    var tray = $("badgeTray");
+    tray.innerHTML = "";
+    CARDS.forEach(function(c, i){
+      var slot = document.createElement("div");
+      slot.className = "badge-slot" + (i < state.idx ? " filled" : (i === state.idx ? " current" : ""));
+      slot.textContent = i < state.idx ? c.tray : "";
+      if (i < state.idx) {
+        slot.style.background = c.soft;
+        slot.style.borderColor = c.accent;
+      }
+      tray.appendChild(slot);
+    });
+  }
+
+  function showToast(){
+    var toast = $("pieceToast");
+    toast.textContent = TOASTS[state.idx % TOASTS.length];
+    toast.classList.add("show");
+    setTimeout(function(){ toast.classList.remove("show"); }, 900);
+  }
+
+  function pulseRing(){
+    var ring = $("ringWrap");
+    ring.classList.remove("pulse");
+    void ring.offsetWidth;
+    ring.classList.add("pulse");
+  }
+
+  function flashScreen(){
+    var f = $("flashOverlay");
+    f.classList.remove("hit");
+    void f.offsetWidth;
+    f.classList.add("hit");
+  }
+
+  function renderRound(revealed){
+    updateRing();
+    renderTray();
+    var card = CARDS[state.idx];
+    var host = $("roundCard");
+    host.classList.remove("enter");
+    void host.offsetWidth;
+    host.classList.add("enter");
+
+    if (card.type === "fact" && !revealed) {
+      host.innerHTML =
+        '<div class="round-face">' +
+          '<div class="face-icon">' + card.icon + '</div>' +
+          '<div class="face-title">' + card.title + '</div>' +
+          '<div class="face-hint">' + card.hint + '</div>' +
+        '</div>' +
+        '<button class="reveal-btn" id="revealBtn" style="background:' + card.accent + '">Tap to reveal →</button>';
+      $("revealBtn").addEventListener("click", function(){ renderRound(true); });
+    } else if (card.type === "fact" && revealed) {
+      var lis = card.bullets.map(function(b){ return "<li>" + b + "</li>"; }).join("");
+      host.innerHTML =
+        '<div class="round-icon">' + card.icon + '</div>' +
+        '<div class="round-title">' + card.title + '</div>' +
+        '<ul class="round-list">' + lis + '</ul>' +
+        '<button class="got-it-btn" id="gotItBtn" style="background:' + card.accent + ';color:#04101f">Snap it in →</button>';
+      var items = host.querySelectorAll(".round-list li");
+      items.forEach(function(li, i){ li.style.animationDelay = (i * 0.09) + "s"; });
+      $("gotItBtn").addEventListener("click", completeRound);
+    } else if (card.type === "capture") {
+      host.innerHTML =
+        '<div class="round-icon">' + card.icon + '</div>' +
+        '<div class="round-title">' + card.title + '</div>' +
+        '<div class="capture-stage">' +
+          '<div class="capture-ring" id="captureRing">🙂</div>' +
+          '<div class="capture-caption" id="captureCaption">Get ready...</div>' +
+          '<button class="shutter-btn" id="shutterBtn">📷</button>' +
+        '</div>';
+      $("shutterBtn").addEventListener("click", onShutterTap);
+      startCaptureLoop();
+    }
+  }
+
+  function startCaptureLoop(){
+    captureSeqIdx = 0;
+    runCaptureStep();
+  }
+
+  function runCaptureStep(){
+    var step = CAPTURE_SEQ[captureSeqIdx];
+    captureState = step.key;
+    var ring = $("captureRing");
+    if (ring) {
+      ring.classList.remove("amber", "green");
+      if (step.key === "amber") ring.classList.add("amber");
+      if (step.key === "green") ring.classList.add("green");
+    }
+    var cap = $("captureCaption");
+    if (cap) cap.textContent = step.caption;
+    captureTimer = setTimeout(function(){
+      captureSeqIdx = (captureSeqIdx + 1) % CAPTURE_SEQ.length;
+      runCaptureStep();
+    }, step.dur);
+  }
+
+  function onShutterTap(){
+    if (captureState === "green") {
+      clearCaptureTimer();
+      flashScreen();
+      setTimeout(completeRound, 180);
+    } else {
+      var ring = $("captureRing");
+      ring.classList.add("shake");
+      setTimeout(function(){ ring.classList.remove("shake"); }, 350);
+      var cap = $("captureCaption");
+      cap.textContent = "Not yet — wait for green!";
+    }
+  }
+
+  function completeRound(){
+    clearCaptureTimer();
+    showToast();
+    pulseRing();
+    state.idx++;
+    if (state.idx >= TOTAL) {
+      setTimeout(showFinal, 350);
+    } else {
+      renderRound();
+      var slots = document.querySelectorAll("#badgeTray .badge-slot.filled");
+      var last = slots[slots.length - 1];
+      if (last) {
+        last.classList.add("pop");
+        setTimeout(function(){ last.classList.remove("pop"); }, 500);
+      }
+    }
+  }
+
+  function showFinal(){
+    $("finalSub").textContent = state.name + ", your Digital Identity badge is complete.";
+    var tray = $("finalTray");
+    tray.innerHTML = "";
+    CARDS.forEach(function(c){
+      var slot = document.createElement("div");
+      slot.className = "badge-slot filled";
+      slot.textContent = c.tray;
+      slot.style.background = c.soft;
+      slot.style.borderColor = c.accent;
+      tray.appendChild(slot);
+    });
+    showPhase("final");
+    spawnConfetti();
+  }
+
+  function spawnConfetti(){
+    var colors = CARDS.map(function(c){ return c.accent; }).concat(["#2ecc71"]);
+    for (var i = 0; i < 30; i++) {
+      (function(i){
+        var el = document.createElement("div");
+        el.className = "confetti-piece";
+        el.style.left = (Math.random() * 100) + "vw";
+        el.style.background = colors[i % colors.length];
+        el.style.animationDuration = (1.6 + Math.random() * 1.2) + "s";
+        el.style.animationDelay = (Math.random() * 0.4) + "s";
+        el.style.transform = "rotate(" + Math.floor(Math.random() * 360) + "deg)";
+        document.body.appendChild(el);
+        setTimeout(function(){ el.remove(); }, 3200);
+      })(i);
+    }
+  }
+
+  function tryStart(){
+    var val = $("playerName").value.trim();
+    if (!val) {
+      $("playerName").classList.add("error");
+      $("nameError").classList.add("show");
+      $("playerName").focus();
+      return;
+    }
+    state.name = val;
+    state.idx = 0;
+    showPhase("round");
+    renderRound();
+  }
+
+  $("startBtn").addEventListener("click", tryStart);
+  $("playerName").addEventListener("input", function(){
+    $("playerName").classList.remove("error");
+    $("nameError").classList.remove("show");
+  });
+  $("playerName").addEventListener("keydown", function(e){
+    if (e.key === "Enter") tryStart();
+  });
+  $("replayBtn").addEventListener("click", function(){
+    state.idx = 0;
+    showPhase("intro");
+  });
+})();
+</script>
+</body>
+</html>
